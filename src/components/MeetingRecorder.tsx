@@ -137,11 +137,16 @@ export const MeetingRecorder = ({ onTranscriptionUpdate, onVoiceAnalysis }: Meet
       const url = URL.createObjectURL(audioBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `meeting-recording-${Date.now()}.wav`;
+      a.download = `meeting-recording-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.wav`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Audio Downloaded",
+        description: "Meeting recording has been saved to your device",
+      });
     }
   };
 
@@ -196,8 +201,11 @@ export const MeetingRecorder = ({ onTranscriptionUpdate, onVoiceAnalysis }: Meet
           <div className="flex items-center gap-2">
             <Button onClick={downloadAudio} variant="outline" size="sm" className="gap-2">
               <Download className="w-4 h-4" />
-              Download Audio
+              Download Recording
             </Button>
+            <div className="text-xs text-muted-foreground">
+              Audio file ready • {formatTime(recordingTime)}
+            </div>
           </div>
         </div>
       )}
