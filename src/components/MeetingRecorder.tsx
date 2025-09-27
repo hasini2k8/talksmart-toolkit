@@ -27,7 +27,6 @@ export const MeetingRecorder = ({ onTranscriptionUpdate, onVoiceAnalysis }: Meet
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const analysisCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     return () => {
@@ -37,7 +36,6 @@ export const MeetingRecorder = ({ onTranscriptionUpdate, onVoiceAnalysis }: Meet
 
   const startRecording = async () => {
     try {
-      console.log('Requesting microphone access...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -46,29 +44,24 @@ export const MeetingRecorder = ({ onTranscriptionUpdate, onVoiceAnalysis }: Meet
         } 
       });
       
-      console.log('Microphone access granted, creating MediaRecorder...');
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        console.log('Audio data available:', event.data.size, 'bytes');
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
-        console.log('Recording stopped, creating audio blob...');
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         setAudioBlob(audioBlob);
-        console.log('Audio blob created:', audioBlob.size, 'bytes');
         stream.getTracks().forEach(track => track.stop());
       };
 
       mediaRecorder.start(1000); // Collect data every second
       setIsRecording(true);
-      console.log('MediaRecorder started');
       
       // Start timer
       timerRef.current = setInterval(() => {
@@ -76,14 +69,13 @@ export const MeetingRecorder = ({ onTranscriptionUpdate, onVoiceAnalysis }: Meet
       }, 1000);
 
       // Simulate real-time voice analysis and transcription
-      analysisCleanupRef.current = simulateRealTimeAnalysis();
+      simulateRealTimeAnalysis();
 
       toast({
         title: "Recording Started",
         description: "Meeting recording is now active",
       });
     } catch (error) {
-      console.error('Recording error:', error);
       toast({
         title: "Recording Error",
         description: "Could not access microphone. Please check permissions.",
@@ -102,12 +94,6 @@ export const MeetingRecorder = ({ onTranscriptionUpdate, onVoiceAnalysis }: Meet
         timerRef.current = null;
       }
 
-      // Stop the analysis simulation
-      if (analysisCleanupRef.current) {
-        analysisCleanupRef.current();
-        analysisCleanupRef.current = null;
-      }
-
       toast({
         title: "Recording Stopped",
         description: `Meeting recorded for ${formatTime(recordingTime)}`,
@@ -116,7 +102,6 @@ export const MeetingRecorder = ({ onTranscriptionUpdate, onVoiceAnalysis }: Meet
   };
 
   const simulateRealTimeAnalysis = () => {
-    console.log('Starting real-time analysis simulation...');
     // Simulate real-time transcription updates
     const transcriptions = [
       "Hello everyone, thank you for joining today's meeting.",
@@ -135,27 +120,16 @@ export const MeetingRecorder = ({ onTranscriptionUpdate, onVoiceAnalysis }: Meet
     ];
 
     let index = 0;
-    let shouldContinue = true;
-    
     const interval = setInterval(() => {
-      console.log('Analysis interval tick - Index:', index, 'Should continue:', shouldContinue);
-      if (!shouldContinue || index >= transcriptions.length) {
-        console.log('Stopping analysis simulation');
+      if (!isRecording || index >= transcriptions.length) {
         clearInterval(interval);
         return;
       }
 
-      console.log('Sending transcription update:', transcriptions[index]);
       onTranscriptionUpdate(transcriptions[index]);
       onVoiceAnalysis(voiceAnalyses[index]);
       index++;
     }, 3000);
-
-    // Store the interval reference to clear it when recording stops
-    return () => {
-      shouldContinue = false;
-      clearInterval(interval);
-    };
   };
 
   const downloadAudio = () => {
@@ -163,16 +137,11 @@ export const MeetingRecorder = ({ onTranscriptionUpdate, onVoiceAnalysis }: Meet
       const url = URL.createObjectURL(audioBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `meeting-recording-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.wav`;
+      a.download = `meeting-recording-${Date.now()}.wav`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
-      toast({
-        title: "Audio Downloaded",
-        description: "Meeting recording has been saved to your device",
-      });
     }
   };
 
@@ -227,11 +196,8 @@ export const MeetingRecorder = ({ onTranscriptionUpdate, onVoiceAnalysis }: Meet
           <div className="flex items-center gap-2">
             <Button onClick={downloadAudio} variant="outline" size="sm" className="gap-2">
               <Download className="w-4 h-4" />
-              Download Recording
+              Download Audio
             </Button>
-            <div className="text-xs text-muted-foreground">
-              Audio file ready • {formatTime(recordingTime)}
-            </div>
           </div>
         </div>
       )}

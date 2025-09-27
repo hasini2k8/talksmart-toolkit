@@ -25,7 +25,6 @@ export const TranscriptionPanel = ({ transcription }: TranscriptionPanelProps) =
   const { toast } = useToast();
 
   useEffect(() => {
-    console.log('TranscriptionPanel received transcription:', transcription);
     if (transcription) {
       const newEntry: TranscriptionEntry = {
         id: Date.now().toString(),
@@ -34,7 +33,6 @@ export const TranscriptionPanel = ({ transcription }: TranscriptionPanelProps) =
         text: transcription
       };
       
-      console.log('Adding new transcription entry:', newEntry);
       setEntries(prev => [...prev, newEntry]);
     }
   }, [transcription]);
@@ -79,7 +77,7 @@ export const TranscriptionPanel = ({ transcription }: TranscriptionPanelProps) =
       yPosition += splitText.length * 6 + 10;
     });
 
-    pdf.save(`meeting-transcript-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`);
+    pdf.save(`meeting-notes-${Date.now()}.pdf`);
     
     toast({
       title: "PDF Downloaded",
@@ -99,27 +97,6 @@ export const TranscriptionPanel = ({ transcription }: TranscriptionPanelProps) =
     });
   };
 
-  const downloadTranscriptText = () => {
-    const fullTranscription = entries
-      .map(entry => `[${entry.timestamp}] ${entry.speaker}: ${entry.text}`)
-      .join('\n');
-    
-    const blob = new Blob([fullTranscription], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `meeting-transcript-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Transcript Downloaded",
-      description: "Text transcript has been saved to your device",
-    });
-  };
-
   const filteredEntries = entries.filter(entry =>
     entry.text.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -131,18 +108,14 @@ export const TranscriptionPanel = ({ transcription }: TranscriptionPanelProps) =
         <Badge variant="outline">{entries.length} entries</Badge>
       </div>
 
-      <div className="flex gap-2 mb-4 flex-wrap">
+      <div className="flex gap-2 mb-4">
         <Button onClick={exportToPDF} variant="outline" size="sm" className="gap-2">
           <Download className="w-4 h-4" />
-          PDF
-        </Button>
-        <Button onClick={downloadTranscriptText} variant="outline" size="sm" className="gap-2">
-          <Download className="w-4 h-4" />
-          Text
+          Export PDF
         </Button>
         <Button onClick={copyToClipboard} variant="outline" size="sm" className="gap-2">
           <Copy className="w-4 h-4" />
-          Copy
+          Copy All
         </Button>
       </div>
 
