@@ -25,6 +25,7 @@ export const TranscriptionPanel = ({ transcription }: TranscriptionPanelProps) =
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('TranscriptionPanel received transcription:', transcription);
     if (transcription) {
       const newEntry: TranscriptionEntry = {
         id: Date.now().toString(),
@@ -33,6 +34,7 @@ export const TranscriptionPanel = ({ transcription }: TranscriptionPanelProps) =
         text: transcription
       };
       
+      console.log('Adding new transcription entry:', newEntry);
       setEntries(prev => [...prev, newEntry]);
     }
   }, [transcription]);
